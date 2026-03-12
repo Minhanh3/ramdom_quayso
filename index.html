@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>🎡 Quay Số Random</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;900&display=swap" rel="stylesheet" />
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: #1a1a2e;
+            color: #eaeaea;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .topbar {
+            background: #0d0d1c;
+            border-bottom: 1px solid #252540;
+            padding: 0 18px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            flex-shrink: 0;
+        }
+
+        .topbar-logo {
+            font-size: 1.05rem;
+            font-weight: 900;
+            background: linear-gradient(90deg, #ffd700, #e94560);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .topbar-hint {
+            font-size: 0.75rem;
+            color: #444;
+            margin-left: auto;
+        }
+
+        .main {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+            min-height: 0;
+        }
+
+        /* ── WHEEL AREA ── */
+        .wheel-area {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: radial-gradient(ellipse at 40% 50%, #1c1c38 0%, #0e0e1c 100%);
+            position: relative;
+            cursor: pointer;
+            user-select: none;
+            overflow: hidden;
+            min-width: 0;
+        }
+
+        .click-hint {
+            position: absolute;
+            font-size: 1rem;
+            font-weight: 800;
+            color: rgba(255, 255, 255, 0.5);
+            text-shadow: 0 2px 12px rgba(0, 0, 0, 0.8);
+            pointer-events: none;
+            text-align: center;
+            line-height: 1.7;
+        }
+
+        .click-hint small {
+            display: block;
+            font-size: 0.7rem;
+            font-weight: 400;
+            opacity: 0.6;
+        }
+
+        .wheel-wrapper {
+            position: relative;
+            flex-shrink: 0;
+            /* size set by JS */
+        }
+
+        canvas#wheel {
+            display: block;
+            border-radius: 50%;
+            filter: drop-shadow(0 0 36px rgba(0, 0, 0, 0.7));
+        }
+
+        .wheel-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 40px;
+            height: 40px;
+            background: radial-gradient(circle, #fff 30%, #ccc 100%);
+            border-radius: 50%;
+            border: 3px solid #0d0d1c;
+            box-shadow: 0 0 14px rgba(255, 255, 255, 0.35);
+            z-index: 10;
+        }
+
+        .pointer {
+            position: absolute;
+            right: -14px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 0;
+            height: 0;
+            border-top: 14px solid transparent;
+            border-bottom: 14px solid transparent;
+            border-right: 30px solid #e94560;
+            filter: drop-shadow(-3px 0 6px rgba(233, 69, 96, 0.5));
+            z-index: 20;
+        }
+
+        .result-overlay {
+            position: absolute;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(10, 10, 22, 0.92);
+            border: 2px solid #ffd700;
+            border-radius: 50px;
+            padding: 8px 30px;
+            font-size: 1.4rem;
+            font-weight: 900;
+            color: #ffd700;
+            text-shadow: 0 0 14px rgba(255, 215, 0, 0.5);
+            display: none;
+            white-space: nowrap;
+            animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 30;
+        }
+
+        @keyframes popIn {
+            from {
+                transform: translateX(-50%) scale(0.5);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(-50%) scale(1);
+                opacity: 1;
+            }
+        }
+
+        /* ── SIDEBAR ── */
+        .sidebar {
+            width: 300px;
+            min-width: 300px;
+            background: #111122;
+            border-left: 1px solid #252540;
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+
+        .sidebar-tabs {
+            display: flex;
+            border-bottom: 1px solid #252540;
+            flex-shrink: 0;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 11px 6px;
+            text-align: center;
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: #555;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .tab.active {
+            color: #eaeaea;
+            border-bottom-color: #e94560;
+        }
+
+        .toolbar {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 6px;
+            padding: 8px 10px;
+            border-bottom: 1px solid #252540;
+            flex-shrink: 0;
+        }
+
+        .tb-btn {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            background: #3b82f6;
+            border: none;
+            border-radius: 6px;
+            color: #fff;
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.76rem;
+            font-weight: 600;
+            padding: 6px 10px;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+            white-space: nowrap;
+        }
+
+        .tb-btn:hover {
+            background: #2563eb;
+        }
+
+        .tb-btn:active {
+            transform: scale(0.95);
+        }
+
+        .tb-btn.green {
+            background: #10b981;
+        }
+
+        .tb-btn.green:hover {
+            background: #059669;
+        }
+
+        .tb-btn svg {
+            width: 13px;
+            height: 13px;
+            fill: currentColor;
+            flex-shrink: 0;
+        }
+
+        .advanced-toggle {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            padding: 7px 12px;
+            border-bottom: 1px solid #252540;
+            flex-shrink: 0;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .advanced-toggle input[type=checkbox] {
+            accent-color: #e94560;
+            width: 14px;
+            height: 14px;
+            cursor: pointer;
+        }
+
+        .advanced-toggle label {
+            font-size: 0.79rem;
+            color: #888;
+            cursor: pointer;
+        }
+
+        .advanced-panel {
+            display: none;
+            background: #0d0d1c;
+            border-bottom: 1px solid #252540;
+            padding: 10px 12px;
+            flex-shrink: 0;
+        }
+
+        .advanced-panel.open {
+            display: block;
+        }
+
+        .adv-note {
+            font-size: 0.74rem;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .weight-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        .weight-list::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .weight-list::-webkit-scrollbar-thumb {
+            background: #2a2a4a;
+            border-radius: 2px;
+        }
+
+        .weight-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .weight-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .weight-name {
+            flex: 1;
+            font-size: 0.79rem;
+            color: #aaa;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .weight-inp {
+            width: 58px;
+            background: #1a1a2e;
+            border: 1px solid #2a2a4a;
+            border-radius: 5px;
+            color: #eaeaea;
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.79rem;
+            padding: 4px 6px;
+            text-align: center;
+            outline: none;
+        }
+
+        .weight-inp:focus {
+            border-color: #e94560;
+        }
+
+        .panel {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            overflow: hidden;
+            min-height: 0;
+        }
+
+        .panel.hidden {
+            display: none;
+        }
+
+        .entries-box {
+            flex: 1;
+            overflow-y: auto;
+            border: 1.5px solid #252540;
+            border-radius: 8px;
+            margin: 8px 10px 4px;
+            background: #0d0d1c;
+            min-height: 0;
+        }
+
+        .entries-box::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .entries-box::-webkit-scrollbar-thumb {
+            background: #2a2a4a;
+            border-radius: 2px;
+        }
+
+        .entry-item {
+            display: flex;
+            align-items: center;
+            padding: 7px 10px;
+            gap: 8px;
+            border-bottom: 1px solid #1a1a2e;
+            transition: background 0.15s;
+        }
+
+        .entry-item:last-child {
+            border-bottom: none;
+        }
+
+        .entry-item:hover {
+            background: #16162a;
+        }
+
+        .entry-item:hover .entry-del {
+            opacity: 1;
+        }
+
+        .entry-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .entry-text {
+            flex: 1;
+            font-size: 0.92rem;
+            font-weight: 600;
+            color: #eaeaea;
+            outline: none;
+            background: transparent;
+            border: none;
+            font-family: 'Outfit', sans-serif;
+            min-width: 0;
+        }
+
+        .entry-text:focus {
+            color: #fff;
+        }
+
+        .entry-del {
+            opacity: 0;
+            background: none;
+            border: none;
+            color: #e94560;
+            cursor: pointer;
+            font-size: 0.95rem;
+            padding: 2px 5px;
+            border-radius: 4px;
+            transition: all 0.15s;
+            flex-shrink: 0;
+        }
+
+        .entry-del:hover {
+            background: rgba(233, 69, 96, 0.15);
+        }
+
+        .add-row {
+            display: flex;
+            gap: 6px;
+            padding: 6px 10px;
+            flex-shrink: 0;
+        }
+
+        .add-row input {
+            flex: 1;
+            background: #0d0d1c;
+            border: 1.5px solid #252540;
+            border-radius: 7px;
+            color: #eaeaea;
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.88rem;
+            padding: 7px 10px;
+            outline: none;
+            transition: border-color 0.2s;
+            min-width: 0;
+        }
+
+        .add-row input:focus {
+            border-color: #e94560;
+        }
+
+        .btn-add-entry {
+            background: #e94560;
+            border: none;
+            color: #fff;
+            font-size: 1.3rem;
+            font-weight: 700;
+            width: 34px;
+            border-radius: 7px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: background 0.2s;
+        }
+
+        .btn-add-entry:hover {
+            background: #c73652;
+        }
+
+        .entries-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 4px 12px 8px;
+            flex-shrink: 0;
+        }
+
+        .foot-count {
+            font-size: 0.74rem;
+            color: #555;
+        }
+
+        .foot-btn {
+            font-size: 0.74rem;
+            color: #555;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-family: 'Outfit', sans-serif;
+            transition: color 0.2s;
+        }
+
+        .foot-btn:hover {
+            color: #e94560;
+        }
+
+        .results-list {
+            flex: 1;
+            overflow-y: auto;
+            margin: 8px 10px 4px;
+            border: 1.5px solid #252540;
+            border-radius: 8px;
+            background: #0d0d1c;
+            min-height: 0;
+        }
+
+        .results-list::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .results-list::-webkit-scrollbar-thumb {
+            background: #2a2a4a;
+            border-radius: 2px;
+        }
+
+        .result-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            gap: 8px;
+            border-bottom: 1px solid #1a1a2e;
+            font-size: 0.88rem;
+            animation: fadeSlide 0.25s;
+        }
+
+        .result-item:last-child {
+            border-bottom: none;
+        }
+
+        @keyframes fadeSlide {
+            from {
+                opacity: 0;
+                transform: translateX(8px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .result-num {
+            color: #444;
+            font-size: 0.74rem;
+            min-width: 18px;
+        }
+
+        .result-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .result-text {
+            font-weight: 600;
+            color: #eaeaea;
+        }
+
+        .results-empty {
+            padding: 24px;
+            text-align: center;
+            color: #333;
+            font-size: 0.85rem;
+        }
+
+        .btn-clear-results {
+            margin: 6px 10px 8px;
+            background: none;
+            border: 1.5px solid #252540;
+            border-radius: 7px;
+            color: #555;
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.78rem;
+            padding: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .btn-clear-results:hover {
+            border-color: #e94560;
+            color: #e94560;
+        }
+
+        /* ── RESPONSIVE MOBILE ── */
+        @media (max-width: 768px) {
+            .main {
+                flex-direction: column;
+            }
+
+            .wheel-area {
+                flex: none;
+                height: 50vh;
+                min-height: 350px;
+                background: radial-gradient(ellipse at 50% 50%, #1c1c38 0%, #0e0e1c 100%);
+            }
+
+            .sidebar {
+                width: 100%;
+                min-width: 100%;
+                border-left: none;
+                border-top: 1px solid #252540;
+                flex: 1;
+            }
+
+            .wheel-wrapper {
+                margin-top: 20px;
+            }
+
+            .toolbar {
+                justify-content: center;
+            }
+
+            .result-overlay {
+                bottom: 15px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="topbar">
+        <span class="topbar-logo">🎡 Quay Số Random</span>
+        <span class="topbar-hint">Ctrl+Enter để quay</span>
+    </div>
+
+    <div class="main">
+
+        <!-- WHEEL -->
+        <div class="wheel-area" id="wheelArea" onclick="spin()">
+            <div class="click-hint" id="clickHint">
+                Click để quay
+                <small>hoặc nhấn Ctrl+Enter</small>
+            </div>
+            <div class="wheel-wrapper" id="wheelWrapper">
+                <div class="pointer"></div>
+                <canvas id="wheel"></canvas>
+                <div class="wheel-center"></div>
+            </div>
+            <div class="result-overlay" id="resultOverlay"></div>
+        </div>
+
+        <!-- SIDEBAR -->
+        <div class="sidebar">
+            <div class="sidebar-tabs">
+                <div class="tab active" id="tab-entries" onclick="switchTab('entries')">Mục <span
+                        id="tab-count">(6)</span></div>
+                <div class="tab" id="tab-results" onclick="switchTab('results')">Các kết quả <span
+                        id="tab-rcount">(0)</span></div>
+            </div>
+
+            <div class="toolbar" id="toolbar">
+                <button class="tb-btn" onclick="shuffleEntries()" title="Tráo đổi">
+                    <svg viewBox="0 0 24 24">
+                        <path
+                            d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17zm4.76-.1l3.65-3.65V8h2V2h-6v2h2.93l-3.65 3.65zM4 18.59L5.41 20l4.76-4.76-1.41-1.41zm10.59.41l3.65 3.65H16v2h6v-6h-2v2.93l-3.65-3.65z" />
+                    </svg>
+                    Tráo đổi
+                </button>
+                <button class="tb-btn" onclick="sortEntries()" title="Sắp xếp">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M3 18h6v-2H3v2zM3 6v2h18V6H3zm0 7h12v-2H3v2z" />
+                    </svg>
+                    Sắp xếp
+                </button>
+                <button class="tb-btn green" onclick="removeLastResult()" title="Xóa mục vừa quay">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
+                    </svg>
+                    Xóa mục đã quay
+                </button>
+            </div>
+
+            <div class="advanced-toggle" onclick="toggleAdvanced()">
+                <input type="checkbox" id="adv-check" onclick="event.stopPropagation();toggleAdvanced()" />
+                <label for="adv-check">Nâng cao (chỉnh tỉ lệ quay)</label>
+            </div>
+
+            <div class="advanced-panel" id="advanced-panel">
+                <div class="adv-note">Chỉnh tỉ lệ — số càng cao càng dễ trúng</div>
+                <div class="weight-list" id="weight-list"></div>
+            </div>
+
+            <div class="panel" id="panel-entries">
+                <div class="entries-box" id="entries-box"></div>
+                <div class="add-row">
+                    <input type="text" id="inp-new" placeholder="Nhập số / tên..." maxlength="20" />
+                    <button class="btn-add-entry" onclick="addEntry()">+</button>
+                </div>
+                <div class="entries-footer">
+                    <span class="foot-count" id="foot-count">6 mục</span>
+                    <button class="foot-btn" onclick="clearAll()">Xóa tất cả</button>
+                </div>
+            </div>
+
+            <div class="panel hidden" id="panel-results">
+                <div class="results-list" id="results-list">
+                    <div class="results-empty">Chưa có kết quả</div>
+                </div>
+                <button class="btn-clear-results" onclick="clearResults()">Xóa lịch sử kết quả</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ── STATE ──
+        let entries = [
+            { id: 1, label: '1', weight: 1 }, { id: 2, label: '2', weight: 1 },
+            { id: 3, label: '3', weight: 1 }, { id: 4, label: '4', weight: 1 },
+            { id: 5, label: '5', weight: 1 }, { id: 6, label: '6', weight: 1 },
+        ];
+        let nextId = 7, results = [], spinning = false, angle = 0, advanced = false;
+
+        const PALETTE = ['#e94560', '#3b82f6', '#f59e0b', '#10b981', '#a855f7', '#ef4444',
+            '#06b6d4', '#f97316', '#8b5cf6', '#ec4899', '#84cc16', '#14b8a6',
+            '#d946ef', '#6366f1', '#fbbf24', '#60a5fa'];
+        const col = i => PALETTE[i % PALETTE.length];
+
+        // ── TABS ──
+        function switchTab(tab) {
+            ['entries', 'results'].forEach(t => {
+                document.getElementById('panel-' + t).classList.toggle('hidden', t !== tab);
+                document.getElementById('tab-' + t).classList.toggle('active', t === tab);
+            });
+            document.getElementById('toolbar').style.display = tab === 'entries' ? 'flex' : 'none';
+        }
+
+        // ── ADVANCED ──
+        function toggleAdvanced() {
+            advanced = !advanced;
+            document.getElementById('adv-check').checked = advanced;
+            document.getElementById('advanced-panel').classList.toggle('open', advanced);
+            if (advanced) renderWeightList();
+        }
+
+        // ── RENDER ──
+        function renderAll() {
+            const box = document.getElementById('entries-box');
+            box.innerHTML = entries.length
+                ? entries.map((e, i) => `
+        <div class="entry-item">
+          <div class="entry-dot" style="background:${col(i)}"></div>
+          <input class="entry-text" value="${esc(e.label)}"
+            onchange="entries[${i}].label=this.value;drawWheel();if(advanced)renderWeightList();"
+            onkeydown="if(event.key==='Enter')document.getElementById('inp-new').focus();" />
+          <button class="entry-del" onclick="removeEntry(${i})">✕</button>
+        </div>`).join('')
+                : '<div style="padding:20px;text-align:center;color:#333;font-size:0.85rem;">Chưa có mục nào</div>';
+
+            const n = entries.length;
+            document.getElementById('tab-count').textContent = `(${n})`;
+            document.getElementById('foot-count').textContent = `${n} mục`;
+            if (advanced) renderWeightList();
+            drawWheel();
+        }
+
+        function renderWeightList() {
+            const list = document.getElementById('weight-list');
+            list.innerHTML = entries.length
+                ? entries.map((e, i) => `
+        <div class="weight-row">
+          <div class="weight-dot" style="background:${col(i)}"></div>
+          <span class="weight-name">${esc(e.label)}</span>
+          <input class="weight-inp" type="number" min="0.1" step="0.1" value="${e.weight}"
+            onchange="entries[${i}].weight=Math.max(0.1,parseFloat(this.value)||1);this.value=entries[${i}].weight;drawWheel();" />
+        </div>`).join('')
+                : '<div style="color:#444;font-size:0.74rem;">Không có mục</div>';
+        }
+
+        function renderResults() {
+            const list = document.getElementById('results-list');
+            const n = results.length;
+            document.getElementById('tab-rcount').textContent = `(${n})`;
+            list.innerHTML = n
+                ? results.map((r, i) => `
+        <div class="result-item">
+          <span class="result-num">${i + 1}</span>
+          <div class="result-dot" style="background:${col(r.ci)}"></div>
+          <span class="result-text">${esc(r.label)}</span>
+        </div>`).join('')
+                : '<div class="results-empty">Chưa có kết quả</div>';
+        }
+
+        // ── CRUD ──
+        function addEntry() {
+            const inp = document.getElementById('inp-new');
+            const val = inp.value.trim();
+            if (!val) return;
+            entries.push({ id: nextId++, label: val, weight: 1 });
+            inp.value = '';
+            renderAll();
+            document.getElementById('entries-box').scrollTop = 99999;
+        }
+
+        function removeEntry(i) { entries.splice(i, 1); renderAll(); }
+        function clearAll() {
+            if (!entries.length || !confirm('Xóa toàn bộ danh sách?')) return;
+            entries = []; renderAll();
+        }
+        function shuffleEntries() {
+            for (let i = entries.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));[entries[i], entries[j]] = [entries[j], entries[i]]; }
+            renderAll();
+        }
+        function sortEntries() {
+            entries.sort((a, b) => a.label.localeCompare(b.label, 'vi', { numeric: true })); renderAll();
+        }
+        function removeLastResult() {
+            if (!results.length) return;
+            const last = results[0];
+            const idx = entries.findIndex(e => e.label === last.label);
+            if (idx >= 0) entries.splice(idx, 1);
+            results.shift(); renderAll(); renderResults();
+        }
+        function clearResults() { results = []; renderResults(); }
+
+        document.getElementById('inp-new').addEventListener('keydown', e => { if (e.key === 'Enter') addEntry(); });
+        document.addEventListener('keydown', e => { if (e.ctrlKey && e.key === 'Enter') { e.preventDefault(); spin(); } });
+
+        // ── WHEEL (dynamic sizing) ──
+        const canvas = document.getElementById('wheel');
+        const ctx = canvas.getContext('2d');
+        const wrapper = document.getElementById('wheelWrapper');
+        const area = document.getElementById('wheelArea');
+
+        // Auto-fit wheel to available space
+        function fitWheel() {
+            const pad = 40;
+            const aw = area.clientWidth - pad * 2;
+            const ah = area.clientHeight - pad * 2;
+            const size = Math.min(aw, ah, 580);
+            wrapper.style.width = size + 'px';
+            wrapper.style.height = size + 'px';
+            canvas.width = size;
+            canvas.height = size;
+            // Resize wheel-center and pointer proportionally
+            const cDot = wrapper.querySelector('.wheel-center');
+            const dotSize = Math.round(size * 0.075);
+            cDot.style.width = dotSize + 'px';
+            cDot.style.height = dotSize + 'px';
+            drawWheel();
+        }
+
+        const ro = new ResizeObserver(fitWheel);
+        ro.observe(area);
+
+        function drawWheelFrame(rot, hiIdx = -1) {
+            const s = canvas.width;
+            const cx = s / 2, cy = s / 2;
+            const r = s / 2 - Math.round(s * 0.012);
+            ctx.clearRect(0, 0, s, s);
+
+            if (!entries.length) {
+                ctx.fillStyle = '#1a1a2e';
+                ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = '#444';
+                ctx.font = `bold ${Math.round(s * 0.028)}px Outfit,sans-serif`;
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText('Thêm mục để bắt đầu', cx, cy);
+                return;
+            }
+
+            const total = entries.reduce((acc, e) => acc + Number(e.weight), 0);
+            let start = -Math.PI / 2;
+            ctx.save();
+            ctx.translate(cx, cy); ctx.rotate(rot); ctx.translate(-cx, -cy);
+
+            entries.forEach((e, i) => {
+                const slice = (Number(e.weight) / total) * Math.PI * 2;
+                const end = start + slice;
+                const c = col(i);
+                ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, r, start, end); ctx.closePath();
+                ctx.fillStyle = hiIdx === i ? lighten(c) : c;
+                ctx.fill();
+                ctx.strokeStyle = '#0d0d1c'; ctx.lineWidth = Math.max(1.5, s / 260); ctx.stroke();
+
+                const mid = start + slice / 2;
+                const tr = r * 0.67;
+                ctx.save();
+                ctx.translate(cx + tr * Math.cos(mid), cy + tr * Math.sin(mid));
+                ctx.rotate(mid + Math.PI / 2);
+                ctx.fillStyle = '#fff';
+                const fs = Math.min(s * 0.048, Math.max(s * 0.016, s * 0.58 / entries.length));
+                ctx.font = `bold ${fs}px Outfit,sans-serif`;
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.shadowColor = 'rgba(0,0,0,0.7)'; ctx.shadowBlur = 5;
+                const label = e.label.length > 13 ? e.label.slice(0, 12) + '…' : e.label;
+                ctx.fillText(label, 0, 0);
+                ctx.restore();
+                start = end;
+            });
+
+            ctx.restore();
+            ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2);
+            ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = Math.round(s * 0.014); ctx.stroke();
+        }
+
+        function drawWheel() { drawWheelFrame(angle); }
+
+        function lighten(hex) {
+            const n = parseInt(hex.slice(1), 16);
+            return `rgb(${Math.min(255, ((n >> 16) & 0xff) + 70)},${Math.min(255, ((n >> 8) & 0xff) + 70)},${Math.min(255, (n & 0xff) + 70)})`;
+        }
+
+        // ── SPIN ──
+        function spin() {
+            if (spinning || entries.length < 2) { if (entries.length < 2) alert('Cần ít nhất 2 mục!'); return; }
+            spinning = true;
+            document.getElementById('resultOverlay').style.display = 'none';
+
+            const total = entries.reduce((s, e) => s + Number(e.weight), 0);
+            let r = Math.random() * total, chosenIdx = 0, cum = 0;
+            for (let i = 0; i < entries.length; i++) { cum += Number(entries[i].weight); if (r <= cum) { chosenIdx = i; break; } }
+
+            const sliceEach = e => (Number(e.weight) / total) * Math.PI * 2;
+            let cumAngle = 0;
+            for (let i = 0; i < chosenIdx; i++) cumAngle += sliceEach(entries[i]);
+            const sliceMid = cumAngle + sliceEach(entries[chosenIdx]) / 2;
+
+            const desiredFinal = -(-Math.PI / 2 + sliceMid);
+            const extraSpins = (5 + Math.floor(Math.random() * 5)) * Math.PI * 2;
+            const delta = extraSpins + ((desiredFinal - angle) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
+
+            const dur = 4200 + Math.random() * 1600, t0 = performance.now(), a0 = angle;
+            const ease = t => 1 - Math.pow(1 - t, 4);
+
+            (function frame(now) {
+                const t = Math.min((now - t0) / dur, 1);
+                angle = a0 + delta * ease(t);
+                drawWheelFrame(angle, t === 1 ? chosenIdx : -1);
+                if (t < 1) { requestAnimationFrame(frame); return; }
+                spinning = false;
+                showResult(chosenIdx);
+            })(performance.now());
+        }
+
+        function showResult(idx) {
+            const e = entries[idx];
+            const ov = document.getElementById('resultOverlay');
+            ov.textContent = '🎉 ' + e.label; ov.style.display = 'block';
+            results.unshift({ label: e.label, ci: idx });
+            renderResults(); confetti();
+        }
+
+        function confetti() {
+            const c = document.createElement('canvas');
+            c.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999';
+            document.body.appendChild(c); c.width = innerWidth; c.height = innerHeight;
+            const x = c.getContext('2d');
+            const pts = Array.from({ length: 80 }, () => ({
+                px: Math.random() * c.width, py: -10, vx: (Math.random() - .5) * 8, vy: Math.random() * 5 + 2,
+                color: PALETTE[Math.floor(Math.random() * PALETTE.length)],
+                sz: Math.random() * 9 + 4, rot: Math.random() * 360, rv: (Math.random() - .5) * 14
+            }));
+            let f = 0;
+            (function draw() {
+                x.clearRect(0, 0, c.width, c.height);
+                pts.forEach(p => {
+                    p.px += p.vx; p.py += p.vy; p.vy += 0.18; p.rot += p.rv;
+                    x.save(); x.translate(p.px, p.py); x.rotate(p.rot * Math.PI / 180);
+                    x.fillStyle = p.color; x.fillRect(-p.sz / 2, -p.sz / 2, p.sz, p.sz); x.restore();
+                });
+                if (++f < 90) requestAnimationFrame(draw); else document.body.removeChild(c);
+            })();
+        }
+
+        function esc(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;'); }
+
+        // ── INIT ──
+        renderAll(); renderResults();
+    </script>
+</body>
+
+</html>
